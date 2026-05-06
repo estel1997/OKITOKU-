@@ -1,0 +1,33 @@
+# Flutter/Dart
+.dart_tool/
+.packages
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+*.iml
+.idea/
+
+# Misc
+*.log
+
+# Editor / OS
+.vscode/
+Thumbs.db
+.DS_Store
+
+# Secrets / local env
+.env
+.env.*
+*.pem
+*.p12
+*.key
+*.crt
+
+# Supabase local artifacts (safe to ignore)
+supabase/.branches
+supabase/.temp
+
+# Firebase local options (regenerate per developer if needed)
+firebase_options.dart
