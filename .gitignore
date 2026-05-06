@@ -31,3 +31,7 @@ supabase/.temp
 
 # Firebase local options (regenerate per developer if needed)
 firebase_options.dart
+
+# Firebase app config files (keep local; do not commit)
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
