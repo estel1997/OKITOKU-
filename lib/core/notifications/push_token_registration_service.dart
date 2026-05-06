@@ -7,14 +7,20 @@ import '../config/app_env.dart';
 
 /// FCM トークンを取得し、Supabase Edge Function `register-push-token` へ登録する。
 abstract final class PushTokenRegistrationService {
-  static Future<String> registerCurrentDeviceToken() async {
+  /// Push通知の有効/無効を Supabase に反映する。
+  ///
+  /// - 有効化: パーミッション要求 → FCM トークン取得 → `enabled=true` で登録
+  /// - 無効化: FCM トークン取得 → `enabled=false` で更新
+  static Future<String> setEnabled({required bool enabled}) async {
     if (!AppEnv.hasSupabase) {
       throw StateError('Supabase が未設定です。');
     }
 
     await _ensureFirebaseInitialized();
     final messaging = FirebaseMessaging.instance;
-    await messaging.requestPermission();
+    if (enabled) {
+      await messaging.requestPermission();
+    }
     final token = await messaging.getToken();
     if (token == null || token.isEmpty) {
       throw StateError('FCM トークンを取得できませんでした。');
@@ -26,10 +32,15 @@ abstract final class PushTokenRegistrationService {
       body: {
         'token': token,
         'platform': _platformName(),
-        'enabled': true,
+        'enabled': enabled,
       },
     );
     return token;
+  }
+
+  /// 互換: 「登録」ボタンから利用。
+  static Future<String> registerCurrentDeviceToken() async {
+    return setEnabled(enabled: true);
   }
 
   static Future<void> _ensureFirebaseInitialized() async {

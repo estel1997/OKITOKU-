@@ -41,6 +41,26 @@ final catalogProductsProvider = FutureProvider<List<CatalogProduct>>((ref) async
   return ref.read(catalogProductRepositoryProvider).listProducts();
 });
 
+/// カタログの最終同期時刻（端末ローカルのキャッシュ更新時刻）。
+final catalogLastSyncedAtProvider = FutureProvider<DateTime?>((ref) async {
+  if (!AppEnv.hasSupabase) {
+    return null;
+  }
+  return PrefsCatalogCache().readUpdatedAt();
+});
+
+/// 「今すぐ同期」用。Supabase から取得してキャッシュを書き換える（UI から明示的に叩く）。
+final catalogSyncNowProvider = FutureProvider<int>((ref) async {
+  if (!AppEnv.hasSupabase) {
+    return 0;
+  }
+  final fresh = await SupabaseCatalogRepository().listProducts();
+  await PrefsCatalogCache().write(fresh);
+  ref.invalidate(catalogProductsProvider);
+  ref.invalidate(catalogLastSyncedAtProvider);
+  return fresh.length;
+});
+
 final catalogProductProvider =
     FutureProvider.family<CatalogProduct?, String>((ref, productId) async {
   final list = await ref.watch(catalogProductsProvider.future);

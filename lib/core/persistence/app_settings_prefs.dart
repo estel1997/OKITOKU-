@@ -1,6 +1,7 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
 const _kShowSuggestedStores = 'settings_show_suggested_stores_v1';
+const _kPushEnabled = 'settings_push_enabled_v1';
 
 /// 設定画面で永続化する UI フラグ（アカウント連携前は端末ローカルのみ）。
 abstract final class AppSettingsPrefs {
@@ -12,5 +13,15 @@ abstract final class AppSettingsPrefs {
   static Future<void> setShowSuggestedStores(bool value) async {
     final p = await SharedPreferences.getInstance();
     await p.setBool(_kShowSuggestedStores, value);
+  }
+
+  static Future<bool> getPushEnabled() async {
+    final p = await SharedPreferences.getInstance();
+    return p.getBool(_kPushEnabled) ?? false;
+  }
+
+  static Future<void> setPushEnabled(bool value) async {
+    final p = await SharedPreferences.getInstance();
+    await p.setBool(_kPushEnabled, value);
   }
 }

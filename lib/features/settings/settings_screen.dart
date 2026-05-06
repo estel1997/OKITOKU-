@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -20,8 +21,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _loaded = false;
   int? _retentionDays;
   bool _retentionLoading = false;
+  bool _pushEnabled = false;
+  bool _pushToggleLoading = false;
   bool _pushRegistering = false;
   String? _pushStatus;
+  bool _catalogSyncing = false;
 
   @override
   void initState() {
@@ -31,6 +35,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   Future<void> _load() async {
     final v = await AppSettingsPrefs.getShowSuggestedStores();
+    final push = await AppSettingsPrefs.getPushEnabled();
     int? retention;
     if (AppEnv.hasSupabase) {
       retention = await _fetchRetentionDays();
@@ -40,6 +45,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
     setState(() {
       _showSuggestedStores = v;
+      _pushEnabled = push;
       _retentionDays = retention;
       _loaded = true;
     });
@@ -238,8 +244,62 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
   }
 
+  bool get _pushSupportedPlatform {
+    if (kIsWeb) {
+      return false;
+    }
+    return switch (defaultTargetPlatform) {
+      TargetPlatform.android => true,
+      TargetPlatform.iOS => true,
+      _ => false,
+    };
+  }
+
+  Future<void> _togglePushEnabled(BuildContext context, bool next) async {
+    if (_pushToggleLoading) {
+      return;
+    }
+    setState(() {
+      _pushToggleLoading = true;
+      _pushEnabled = next;
+    });
+    try {
+      final token =
+          await PushTokenRegistrationService.setEnabled(enabled: next);
+      await AppSettingsPrefs.setPushEnabled(next);
+      if (!context.mounted) {
+        return;
+      }
+      final suffix = token.length > 10 ? token.substring(token.length - 10) : token;
+      setState(() => _pushStatus = next ? '有効（末尾: $suffix）' : '無効（末尾: $suffix）');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(next ? 'プッシュ通知を有効にしました' : 'プッシュ通知を無効にしました')),
+      );
+    } catch (e) {
+      // 失敗したら元に戻す
+      await AppSettingsPrefs.setPushEnabled(!next);
+      if (!context.mounted) {
+        return;
+      }
+      setState(() => _pushEnabled = !next);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('更新に失敗しました: $e')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _pushToggleLoading = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    String formatDt(DateTime t) {
+      final local = t.toLocal();
+      return '${local.year}-${local.month.toString().padLeft(2, '0')}-${local.day.toString().padLeft(2, '0')} '
+          '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
+    }
+
     return Scaffold(
       primary: false,
       appBar: AppBar(title: const Text('設定')),
@@ -269,6 +329,49 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               onTap: () => _testSupabase(context),
             ),
             ListTile(
+              leading: const Icon(Icons.inventory_2_outlined),
+              title: const Text('商品カタログを同期'),
+              subtitle: ref.watch(catalogLastSyncedAtProvider).when(
+                    data: (t) => Text(
+                      t == null ? '未同期（タップで同期）' : '最終同期: ${formatDt(t)}',
+                    ),
+                    loading: () => const Text('読み込み中…'),
+                    error: (_, __) => const Text('状態を読み込めません'),
+                  ),
+              trailing: _catalogSyncing
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.chevron_right),
+              onTap: _catalogSyncing
+                  ? null
+                  : () async {
+                      setState(() => _catalogSyncing = true);
+                      try {
+                        final n = await ref.read(catalogSyncNowProvider.future);
+                        if (!context.mounted) {
+                          return;
+                        }
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('同期しました（$n 件）')),
+                        );
+                      } catch (e) {
+                        if (!context.mounted) {
+                          return;
+                        }
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('同期に失敗しました: $e')),
+                        );
+                      } finally {
+                        if (mounted) {
+                          setState(() => _catalogSyncing = false);
+                        }
+                      }
+                    },
+            ),
+            ListTile(
               leading: const Icon(Icons.history_outlined),
               title: const Text('価格履歴の保持日数'),
               subtitle: Text(
@@ -288,19 +391,38 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ],
           const Divider(height: 1),
           const _SettingsSectionHeader(title: '通知'),
-          const SwitchListTile(
-            title: Text('プッシュ通知'),
-            subtitle: Text('トークン登録は可能。実送信（FCM/APNs）はサーバ配信処理の接続後に有効化予定'),
-            value: false,
-            onChanged: null,
-          ),
-          if (AppEnv.hasSupabase)
+          if (!AppEnv.hasSupabase)
+            const SwitchListTile(
+              title: Text('プッシュ通知'),
+              subtitle: Text('Supabase 未設定のため無効です'),
+              value: false,
+              onChanged: null,
+            )
+          else if (!_pushSupportedPlatform)
+            const SwitchListTile(
+              title: Text('プッシュ通知'),
+              subtitle: Text('このプラットフォームでは未対応です（Android / iOS 対応）'),
+              value: false,
+              onChanged: null,
+            )
+          else
+            SwitchListTile(
+              title: const Text('プッシュ通知'),
+              subtitle: Text(
+                _pushStatus ?? 'オンにすると、この端末のトークンを登録して通知対象にします。',
+              ),
+              value: _pushEnabled,
+              onChanged: _pushToggleLoading
+                  ? null
+                  : (v) => _togglePushEnabled(context, v),
+            ),
+          if (AppEnv.hasSupabase && _pushSupportedPlatform)
             ListTile(
               leading: const Icon(Icons.notifications_active_outlined),
-              title: const Text('Push トークンを登録'),
+              title: const Text('Push トークンを再登録'),
               subtitle: Text(
                 _pushStatus == null
-                    ? 'この端末の FCM トークンを register-push-token へ保存'
+                    ? '通知ON/OFFに関わらず、現在のトークンを再送信します'
                     : _pushStatus!,
               ),
               trailing: _pushRegistering

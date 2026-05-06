@@ -17,15 +17,27 @@ class ComposedCatalogRepository implements CatalogProductRepository {
 
   @override
   Future<List<CatalogProduct>> listProducts() async {
+    // まずキャッシュ（あれば）を返し、裏でリモート更新（SWR）。
+    // これにより UI が即座に描画でき、通信失敗時も前回キャッシュを維持できる。
+    final cached = await _cache.read();
+    if (cached != null && cached.isNotEmpty) {
+      () async {
+        try {
+          final fresh = await _remote.listProducts();
+          await _cache.write(fresh);
+        } catch (_) {
+          // Keep cache.
+        }
+      }();
+      return cached;
+    }
+
+    // キャッシュが無ければリモート優先。失敗時はローカルシード。
     try {
       final fresh = await _remote.listProducts();
       await _cache.write(fresh);
       return fresh;
     } catch (_) {
-      final cached = await _cache.read();
-      if (cached != null && cached.isNotEmpty) {
-        return cached;
-      }
       return _local.listProducts();
     }
   }
