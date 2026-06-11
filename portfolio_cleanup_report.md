@@ -7,94 +7,52 @@
 - OKITOKU-
 - Jump_king_Unity
 - git_sample
+- GitHub full cleanup follow-up
 
-## 対応したこと
+## OKITOKU- 再確認結果
 
-### OKITOKU-
+- README.md は Flutter 初期テンプレートではない
+- 沖縄県内の買い物・価格比較アプリ prototype として説明されている
+- 実装済み、検証中、今後予定が分けて書かれている
+- docs/app-concept.md がある
+- docs/data-design.md がある
+- docs/future-roadmap.md がある
+- docs/learning-notes.md を追加
+- `.github` テンプレートを追加
+- `.env.example` を追加
 
-- README.md をポートフォリオ向けに全面改修
-- Flutter 初期テンプレートの文言を削除
-- アプリ概要、制作目的、想定ユーザー、使用技術、主な機能、学んだこと、今後の改善予定を追加
-- 実装済み、検証中、今後の予定を分けて記載
-- docs を追加
-  - docs/app-concept.md
-  - docs/data-design.md
-  - docs/future-roadmap.md
-- .gitignore を確認
-  - .env、Firebase 設定ファイル、鍵ファイルなどは除外済み
-  - 今回の追加変更は不要
+## private 化再確認
 
 ### Jump_king_Unity
 
-- private 化を試行
 - 実行コマンド:
-  - `gh repo edit estel1997/Jump_king_Unity --visibility private`
+  - `gh repo edit estel1997/Jump_king_Unity --visibility private --accept-visibility-change-consequences`
 - 結果:
-  - 失敗
-- 理由:
-  - GitHub CLI が未ログイン
-  - `gh auth login` または `GH_TOKEN` の設定が必要
+  - 成功
 
 ### git_sample
 
-- private 化を試行
 - 実行コマンド:
-  - `gh repo edit estel1997/git_sample --visibility private`
+  - `gh repo edit estel1997/git_sample --visibility private --accept-visibility-change-consequences`
 - 結果:
-  - 失敗
-- 理由:
-  - GitHub CLI が未ログイン
-  - `gh auth login` または `GH_TOKEN` の設定が必要
+  - 成功
+
+## セキュリティ確認
+
+- README / docs に API key、secret、token、service role key、個人情報の実値は追加していない
+- `.env.example` は placeholder のみ
+- `.gitignore` では `.env`、Firebase 設定ファイル、鍵ファイルなどを除外済み
 
 ## 変更したファイル
 
 - README.md
-- docs/app-concept.md
-- docs/data-design.md
-- docs/future-roadmap.md
+- docs/learning-notes.md
+- .env.example
+- .github/PULL_REQUEST_TEMPLATE.md
+- .github/ISSUE_TEMPLATE/bug_report.md
+- .github/ISSUE_TEMPLATE/feature_request.md
 - portfolio_cleanup_report.md
 
-## セキュリティ確認
+## 詳細なアカウント全体確認
 
-以下の観点で確認しました。
-
-- API キー
-- secret
-- token
-- service role
-- password
-- Bearer token
-- Supabase URL / anon key
-- Firebase 設定値
-
-確認結果:
-
-- 指定パターンの検索では、`secret`、`token`、`private` などの一般語句・手順説明・プレースホルダ名はヒット
-- API キー、secret、token、個人情報の実値は README.md と docs に追加していない
-
-## 手動対応が必要なこと
-
-### private 化
-
-GitHub CLI で行う場合:
-
-```bash
-gh auth login
-gh repo edit estel1997/Jump_king_Unity --visibility private
-gh repo edit estel1997/git_sample --visibility private
-```
-
-GitHub 画面で行う場合:
-
-1. 対象リポジトリを開く
-2. Settings を開く
-3. General の下部にある Danger Zone を確認
-4. Change repository visibility を選択
-5. Make private を選択
-6. リポジトリ名を入力して確定
-
-### GitHub プロフィール整理
-
-- OKITOKU- の About 欄を更新
-- OKITOKU- に Topics を追加
-- Pinned repositories の表示順を整理
+アカウント全体の巡回順と手動確認項目は、profile README repo の `github_manual_update_guide.md` にまとめています。

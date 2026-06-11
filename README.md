@@ -136,6 +136,7 @@ Onboarding
 - [docs/app-concept.md](docs/app-concept.md)
 - [docs/data-design.md](docs/data-design.md)
 - [docs/future-roadmap.md](docs/future-roadmap.md)
+- [docs/learning-notes.md](docs/learning-notes.md)
 - [docs/IMPLEMENTATION_ROADMAP.md](docs/IMPLEMENTATION_ROADMAP.md)
 - [docs/UNIMPLEMENTED.md](docs/UNIMPLEMENTED.md)
 
