@@ -109,8 +109,6 @@ Onboarding
 
 実装では、ローカルの seed / cache と Supabase の remote repository を組み合わせ、通信に失敗しても最低限の画面表示を続けられる構成を目指しています。
 
-詳しくは [docs/data-design.md](docs/data-design.md) を参照してください。
-
 ## 工夫した点
 
 - 日常の買い物という身近な課題を、店舗・商品・価格というデータ構造に分けて整理した
